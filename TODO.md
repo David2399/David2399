@@ -1,0 +1,4 @@
+- [ ] Crear vista `laravel/resources/views/admin/steps.blade.php` para submenú "Creación de pasos".
+- [ ] Agregar ruta web protegida en `laravel/routes/web.php` para `/admin/creacion-pasos`.
+- [ ] Agregar acceso desde `laravel/resources/views/admin/dashboard.blade.php` al submenú.
+- [ ] Probar flujo de listar, editar y guardar procesos desde la tabla.

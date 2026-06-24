@@ -53,6 +53,15 @@
                         <button onclick="renderView('Producción Individual')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Producción Individual</button>
                     </div>
                 </div>
+
+                <div class="relative group h-20 flex items-center">
+                    <button class="nav-link py-2 flex items-center gap-1 hover:text-indigo-600 transition-colors">ASESORES ▾</button>
+                    <div class="absolute top-20 left-0 w-56 bg-white border border-gray-200 rounded-lg shadow-xl hidden group-hover:block z-50">
+                        <button onclick="renderView('Dividir Curva')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Dividir Curva</button>
+                        <button onclick="renderView('Asignar Manualidades')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Asignar Manualidades</button>
+                        <button onclick="renderView('Revisar Ruta')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Revisar Ruta</button>
+                    </div>
+                </div>
             </nav>
         </div>
         
@@ -83,7 +92,7 @@
         const verticalMenuData = [
             { title: "PRODUCCION", items: ["Creación de Pedido", "Creación de Pasos", "Asignación de Pasos/Procesos", "Asignación de Recetarios"] },
             { title: "RECETARIO", items: ["Inventario Materias Primas", "Docificación", "Guardar Receta Pedido", "Provisionar"] },
-            { title: "MAQUINARIA", items: ["Producción en Curso", "Asignación de Maquinaria"] },
+            { title: "MAQUINARIA", items: ["Producción en Curso", "Asignación de Lavadora","Asignación de Secadora","Asignación de Centrifugado"] },
             { title: "REPORTES", items: ["Procesos Completados", "Procesos Pendientes", "Pedidos Recibidos"] }
         ];
 
