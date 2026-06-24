@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP de Producción v3.3.1 - Gestión Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .accordion-content { transition: max-height 0.3s ease-out, opacity 0.2s; }
+        .hidden-accordion { max-height: 0; opacity: 0; overflow: hidden; }
+        .visible-accordion { max-height: 800px; opacity: 1; }
+        .form-input { @apply border border-gray-300 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-indigo-500 outline-none transition-all; }
+        @media print {
+            .no-print { display: none; }
+            .print-only { display: block; width: 58mm; margin: 0 auto; padding: 10px; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col">
+
+    <header class="bg-white border-b border-gray-200 h-20 flex items-center justify-between px-8 shadow-sm z-50 no-print">
+        <div class="flex items-center gap-10">
+            <div class="bg-indigo-600 w-16 h-10 flex items-center justify-center font-bold text-white rounded-lg shadow-md cursor-pointer" onclick="location.reload()">LOGO</div>
+            
+            <nav class="hidden md:flex gap-6 font-semibold text-gray-600">
+                <div class="relative group h-20 flex items-center">
+                    <button class="nav-link py-2 flex items-center gap-1 hover:text-indigo-600 transition-colors">TERCEROS ▾</button>
+                    <div class="absolute top-20 left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden group-hover:block z-50">
+                        <button onclick="renderView('Clientes')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Clientes</button>
+                        <button onclick="renderView('Colaboradores')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Colaboradores</button>
+                    </div>
+                </div>
+
+                <div class="relative group h-20 flex items-center">
+                    <button class="nav-link py-2 flex items-center gap-1 hover:text-indigo-600 transition-colors">PEDIDOS ▾</button>
+                    <div class="absolute top-20 left-0 w-56 bg-white border border-gray-200 rounded-lg shadow-xl hidden group-hover:block z-50">
+                        <button onclick="renderView('Creación de Pedido')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Creación de Pedido</button>
+                        <button onclick="renderView('Remisión de Recogida')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Remisión de Recogida</button>
+                        <button onclick="renderView('Remisiones de Entrega')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Remisiones de Entrega</button>
+                        <button onclick="renderView('Entregas')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Entregas</button>
+                    </div>
+                </div>
+
+                <div class="relative group h-20 flex items-center">
+                    <button class="nav-link py-2 flex items-center gap-1 hover:text-indigo-600 transition-colors">PAGO DE PRODUCCION ▾</button>
+                    <div class="absolute top-20 left-0 w-56 bg-white border border-gray-200 rounded-lg shadow-xl hidden group-hover:block z-50">
+                        <button onclick="renderView('Relación Grupal')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Relación Grupal</button>
+                        <button onclick="renderView('Relación Individual')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Relación Individual</button>
+                        <button onclick="renderView('Producción Individual')" class="block w-full text-left px-4 py-3 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">Producción Individual</button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <div class="flex items-center gap-4 border-l pl-6">
+            <div class="text-right hidden sm:block">
+                <p class="text-sm font-bold text-gray-800">Administrador</p>
+                <p class="text-xs text-gray-500">Super Usuario</p>
+            </div>
+            <div class="h-10 w-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">A</div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden no-print">
+        <aside class="w-72 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+            <div id="sidebar-menu" class="space-y-4"></div>
+        </aside>
+
+        <main id="content-area" class="flex-1 p-8 overflow-y-auto bg-gray-50"></main>
+    </div>
+
+    <script>
+        let pedidoConsecutivo = 1001;
+        let listaPedidos = [];
+        let listaClientes = [];
+        let listaColaboradores = [];
+        const prendasReferencias = ["Camiseta Básica", "Jeans Slim", "Chaqueta", "Hoodie", "Pantalón Cargo", "Vestido", "Camisa Polo", "Falda", "Suéter", "Joggers", "Blusa", "Shorts", "Gabardina", "Bermuda", "Chaleco"];
+
+        const verticalMenuData = [
+            { title: "PRODUCCION", items: ["Creación de Pedido", "Creación de Pasos", "Asignación de Pasos/Procesos", "Asignación de Recetarios"] },
+            { title: "RECETARIO", items: ["Inventario Materias Primas", "Docificación", "Guardar Receta Pedido", "Provisionar"] },
+            { title: "MAQUINARIA", items: ["Producción en Curso", "Asignación de Maquinaria"] },
+            { title: "REPORTES", items: ["Procesos Completados", "Procesos Pendientes", "Pedidos Recibidos"] }
+        ];
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(`accordion-${id}`);
+            el.classList.toggle('hidden-accordion');
+            el.classList.toggle('visible-accordion');
+        }
+
+        const sidebarContainer = document.getElementById('sidebar-menu');
+        verticalMenuData.forEach((section, index) => {
+            const div = document.createElement('div');
+            div.className = "mb-4";
+            div.innerHTML = `
+                <button onclick="toggleAccordion(${index})" class="w-full flex justify-between items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 p-2 hover:bg-gray-50 rounded">
+                    ${section.title}
+                    <span class="text-gray-400">▼</span>
+                </button>
+                <div id="accordion-${index}" class="accordion-content visible-accordion">
+                    <ul class="space-y-1 ml-2 border-l border-gray-200">
+                        ${section.items.map(item => `<li><button onclick="renderView('${item}')" class="w-full text-left text-sm text-gray-700 p-2 hover:text-indigo-600 hover:bg-indigo-50 rounded-r-lg transition-all menu-item">${item}</button></li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            sidebarContainer.appendChild(div);
+        });
+
+        function addItemRow() {
+            const container = document.getElementById('items-container');
+            const row = document.createElement('div');
+            row.className = 'grid grid-cols-12 gap-3 mb-3 item-row';
+            row.innerHTML = `
+                <select class="col-span-8 border border-gray-300 rounded-lg px-3 py-2 text-sm form-ref">
+                    ${prendasReferencias.map(p => `<option value="${p}">${p}</option>`).join('')}
+                </select>
+                <input type="number" min="1" placeholder="Cant." class="col-span-3 border border-gray-300 rounded-lg px-3 py-2 text-sm form-qty">
+                <button type="button" onclick="this.parentElement.remove()" class="col-span-1 text-red-400 hover:text-red-600">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function saveOrder() {
+            const name = document.getElementById('form-name').value;
+            const nit = document.getElementById('form-nit').value;
+            const address = document.getElementById('form-address').value;
+            const rows = document.querySelectorAll('.item-row');
+            if(!name || rows.length === 0) { alert("Complete los datos"); return; }
+            const items = Array.from(rows).map(r => ({ ref: r.querySelector('.form-ref').value, qty: r.querySelector('.form-qty').value }));
+            const pedidoActual = { 
+                id: pedidoConsecutivo, 
+                name, 
+                nit, 
+                address, 
+                items, 
+                status: 'Pendiente', 
+                fecha: new Date().toLocaleString(), 
+                fechaObj: new Date(),
+                printTime: null, 
+                firmaStatus: 'No firmada' 
+            };
+            listaPedidos.push(pedidoActual);
+            
+            const qrDisplay = document.getElementById('qr-display');
+            qrDisplay.innerHTML = `<div class="p-4 bg-white rounded-lg shadow-inner inline-block"><p class="text-xs font-bold mb-2">QR Pedido #${pedidoConsecutivo}</p><div id="qrcode"></div></div>`;
+            new QRCode(document.getElementById("qrcode"), String(pedidoConsecutivo));
+            
+            alert("Pedido #" + pedidoConsecutivo + " guardado.");
+            pedidoConsecutivo++;
+        }
+
+        function guardarImagen(id) {
+            const p = listaPedidos.find(ped => ped.id == id);
+            if(p) {
+                p.firmaStatus = 'Con recogida firma';
+                alert("Imagen guardada para el pedido #" + id);
+                renderView('Remisión de Recogida');
+            }
+        }
+
+        function tomarFoto(id) {
+            alert("Activando cámara para pedido #" + id + "... (Funcionalidad de captura habilitada)");
+        }
+
+        function imprimirSeleccion() {
+            const checkboxes = document.querySelectorAll('.pedido-checkbox:checked');
+            if(checkboxes.length === 0) return alert("Seleccione al menos uno");
+            
+            checkboxes.forEach(chk => {
+                const p = listaPedidos.find(ped => ped.id == chk.dataset.id);
+                if(p) {
+                    p.status = 'Recogido por Empleado';
+                    p.printTime = new Date().toLocaleTimeString();
+                }
+            });
+
+            const printWindow = window.open('', '_blank', 'width=300,height=600');
+            let html = `<html><head><style>body{width:58mm; font-family:monospace; font-size:12px;}</style></head><body>`;
+            checkboxes.forEach(chk => {
+                const p = listaPedidos.find(ped => ped.id == chk.dataset.id);
+                const totalQty = p.items.reduce((sum, i) => sum + parseInt(i.qty || 0), 0);
+                html += `<div><p><strong>PEDIDO ${p.id}</strong></p><p>Cliente: ${p.name}</p><p>Dir: ${p.address}</p>Items:${p.items.map(i=>`<br>- ${i.qty} ${i.ref}`).join('')}<p><strong>TOTAL PRENDAS: ${totalQty}</strong></p><div id="qr-${p.id}"></div><p>Para información de su estado https:// | 3xxxxxx Cúcuta, Colombia</p></div><hr>`;
+            });
+            html += `<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+            <script>window.onload=()=>{ ${Array.from(checkboxes).map(chk => `new QRCode(document.getElementById("qr-${chk.dataset.id}"), "${chk.dataset.id}");`).join(';')} setTimeout(window.print, 500); }<\/script></body></html>`;
+            printWindow.document.write(html);
+            printWindow.document.close();
+            renderView('Remisión de Recogida');
+        }
+
+        function renderPedidosRecibidos(filter = 'Todos') {
+            const now = new Date();
+            let filtered = listaPedidos.filter(p => p.status === 'Pendiente');
+            
+            if (filter !== 'Todos') {
+                filtered = filtered.filter(p => {
+                    const pDate = new Date(p.fechaObj || new Date());
+                    if (filter === 'Dia') return pDate.toDateString() === now.toDateString();
+                    if (filter === 'Semana') return (now - pDate) / (1000 * 60 * 60 * 24) <= 7;
+                    if (filter === 'Quincena') return (now - pDate) / (1000 * 60 * 60 * 24) <= 15;
+                    if (filter === 'Mes') return pDate.getMonth() === now.getMonth() && pDate.getFullYear() === now.getFullYear();
+                    return true;
+                });
+            }
+
+            const totalOrders = filtered.length;
+            const totalGarments = filtered.reduce((acc, p) => acc + p.items.reduce((sum, i) => sum + parseInt(i.qty || 0), 0), 0);
+
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Pedidos Recibidos</h2>
+                        <select onchange="renderPedidosRecibidos(this.value)" class="border rounded-lg p-2">
+                            <option value="Todos" ${filter === 'Todos' ? 'selected' : ''}>Todos</option>
+                            <option value="Dia" ${filter === 'Dia' ? 'selected' : ''}>Hoy</option>
+                            <option value="Semana" ${filter === 'Semana' ? 'selected' : ''}>Última Semana</option>
+                            <option value="Quincena" ${filter === 'Quincena' ? 'selected' : ''}>Última Quincena</option>
+                            <option value="Mes" ${filter === 'Mes' ? 'selected' : ''}>Este Mes</option>
+                        </select>
+                    </div>
+                    <table class="w-full text-left text-sm text-gray-600">
+                        <thead><tr class="border-b"><th class="py-2">ID ORDEN</th><th>CLIENTE</th><th>NIT</th><th>DETALLE Y ESTADO</th></tr></thead>
+                        <tbody>
+                            ${filtered.map(p => `<tr>
+                                <td class="py-2 font-bold">${p.id}</td>
+                                <td>${p.name}</td>
+                                <td>${p.nit}</td>
+                                <td>${p.items.map(i => `<span class="block text-xs border-b pb-1">${i.qty} ${i.ref} - <span class="text-orange-500">PENDIENTE</span></span>`).join('')}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                        <tfoot class="bg-gray-50 font-bold border-t border-gray-200">
+                            <tr>
+                                <td colspan="2" class="py-3 px-2">TOTAL ÓRDENES: ${totalOrders}</td>
+                                <td colspan="2" class="text-right py-3 px-2">TOTAL PRENDAS: ${totalGarments}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+        }
+
+        function renderView(viewName) {
+            const contentArea = document.getElementById('content-area');
+            if (viewName === 'Creación de Pedido') {
+                contentArea.innerHTML = `<div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-xl font-bold mb-6">Crear Nuevo Pedido #${pedidoConsecutivo}</h2>
+                    <input type="text" id="form-name" placeholder="Nombre" class="form-input mb-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4"><input type="text" id="form-nit" placeholder="NIT" class="form-input"><input type="text" id="form-address" placeholder="Dirección" class="form-input"></div>
+                    <div id="items-container"></div>
+                    <button onclick="addItemRow()" class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">+ Agregar Ítem</button>
+                    <button onclick="saveOrder()" class="w-full bg-indigo-600 text-white mt-6 py-3 rounded-xl font-bold">GUARDAR Y GENERAR QR</button>
+                    <div id="qr-display" class="mt-6 flex justify-center"></div>
+                    </div>`;
+                addItemRow();
+            } else if (viewName === 'Remisión de Recogida') {
+                contentArea.innerHTML = `<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h2 class="text-2xl font-bold mb-6">Remisión de Recogida</h2>
+                    <table class="w-full text-xs"><thead><tr class="border-b"><th>Sel</th><th>ID</th><th>Cliente/NIT</th><th>Detalle</th><th>Estado</th><th>Hora Impr.</th><th>Estado Firma</th><th>Foto</th><th>Acción</th></tr></thead>
+                    <tbody>${listaPedidos.map(p => `<tr>
+                        <td><input type="checkbox" class="pedido-checkbox" data-id="${p.id}"></td>
+                        <td>${p.id}</td><td>${p.name}<br>${p.nit}</td><td>${p.items.map(i=>i.qty+' '+i.ref).join(', ')}</td>
+                        <td>${p.status}</td><td>${p.printTime || 'N/A'}</td><td>${p.firmaStatus}</td>
+                        <td><button onclick="tomarFoto(${p.id})" class="bg-gray-200 px-2 py-1 rounded">📸</button></td>
+                        <td><button onclick="guardarImagen(${p.id})" class="bg-blue-500 text-white px-2 py-1 rounded text-[10px]">Guardar Imagen</button></td>
+                    </tr>`).join('')}</tbody></table>
+                    <button onclick="imprimirSeleccion()" class="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold">Imprimir Selección (58mm)</button></div>`;
+            } else if (viewName === 'Procesos Completados' || viewName === 'Procesos Pendientes') {
+                contentArea.innerHTML = `<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200"><h2 class="text-2xl font-bold mb-6">${viewName}</h2><table class="w-full text-left text-sm text-gray-600"><thead><tr class="border-b"><th class="py-2">ID ORDEN</th><th>REF (Prenda)</th><th>CANTIDAD</th><th>PROCESO</th><th>ESTADO</th></tr></thead><tbody>${listaPedidos.map(p => p.items.map((i, idx) => `<tr><td class="py-2">${p.id}</td><td>${i.ref}</td><td>${i.qty}</td><td>${idx + 1}/12</td><td><span class="${viewName === 'Procesos Completados' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'} px-2 py-1 rounded-full font-bold">${viewName === 'Procesos Completados' ? 'OK' : 'PENDIENTE'}</span></td></tr>`).join('')).join('')}</tbody></table></div>`;
+            } else if (viewName === 'Clientes' || viewName === 'Colaboradores') {
+                contentArea.innerHTML = `<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200"><h2 class="text-2xl font-bold mb-6">${viewName}</h2><div class="grid grid-cols-2 gap-4 mb-6"><input type="text" id="t-nombre" placeholder="Nombre" class="form-input"><input type="text" id="t-nit" placeholder="NIT" class="form-input"><input type="text" id="t-dir" placeholder="Dirección" class="form-input"><input type="text" id="t-tel" placeholder="Teléfono" class="form-input"></div><button onclick="alert('Funcionalidad de guardado')" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold">Guardar</button></div>`;
+            } else if (viewName === 'Pedidos Recibidos') {
+                renderPedidosRecibidos();
+            } else {
+                contentArea.innerHTML = `<div class="p-8 text-center text-gray-500">Sección ${viewName} en construcción.</div>`;
+            }
+        }
+        renderView('Creación de Pedido');
+    </script>
+</body>
+</html>
